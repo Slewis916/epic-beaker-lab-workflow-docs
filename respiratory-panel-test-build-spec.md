@@ -34,7 +34,7 @@
 | Influenza B | LAB0001-FLUB-R | Detected / Not Detected |
 | RSV | LAB0001-RSV-R | Detected / Not Detected |
 
-**Co-detection:** Multiple analytes may be simultaneously positive on a single specimen. Each component result reports independently regardless of other analyte results.
+**Co-detection:** Multiple analytes may be simultaneously positive on a single specimen. Common co-detections include SARS-CoV-2 + RSV, SARS-CoV-2 + Influenza A/B, and Influenza A/B + RSV. Each component result reports independently regardless of other analyte results. Co-detection does not trigger a hold or special routing — all components report normally upon successful auto-verification.
 
 ---
 
@@ -58,11 +58,11 @@
 ## Order Priority Configuration
 | Patient Location | Order Priority | Platform | TAT |
 |---|---|---|---|
-| Emergency Department | STAT (automatic) | Cepheid Xpert | 47 minutes |
-| Operating Room | STAT (automatic) | Cepheid Xpert | 47 minutes |
-| Inpatient Floors | STAT (automatic) | Cepheid Xpert | 47 minutes |
+| Emergency Department | STAT (automatic) | Cepheid GeneXpert Infinity | 47 minutes |
+| Operating Room | STAT (automatic) | Cepheid GeneXpert Infinity | 47 minutes |
+| Inpatient Floors | STAT (automatic) | Cepheid GeneXpert Infinity | 47 minutes |
 | Outpatient / Ambulatory | Routine (default) | Hologic Panther | 3.5 hours |
-| Any location — provider override | STAT (manual) | Cepheid Xpert | 47 minutes |
+| Any location — provider override | STAT (manual) | Cepheid GeneXpert Infinity | 47 minutes |
 
 **Note:** Order priority is driven by patient location. ED, OR, and inpatient patients are automatically assigned STAT priority. Outpatient orders default to Routine unless provider manually upgrades to STAT at order entry.
 
@@ -71,9 +71,9 @@
 ## Specimen Routing Logic
 | Condition | Platform | Rationale |
 |---|---|---|
-| STAT order + NP source | Cepheid Xpert | Validated for NP specimens, 47-min TAT |
+| STAT order + NP source | Cepheid GeneXpert Infinity | Validated for NP specimens, 47-min TAT |
 | Routine order + NP source | Hologic Panther | Validated for NP specimens, 3.5-hr TAT |
-| Any order + Throat source | Hologic Panther | Cepheid platform NOT validated for throat specimens for 4-plex testing — routing override applies regardless of order priority or patient location |
+| Any order + Throat source | Hologic Panther | Cepheid GeneXpert Infinity NOT validated for throat specimens for 4-plex testing — routing override applies regardless of order priority or patient location |
 
 **Routing Exception:** Throat specimens must always route to Hologic Panther regardless of patient location or order priority. This override takes precedence over all other routing rules.
 
@@ -96,15 +96,21 @@ Providers may add on a Mini Respiratory Panel to test for additional analytes.
 ## CER Rules — Auto-Verification Criteria
 Auto-verification will trigger when ALL of the following conditions are met:
 
-| CER Rule | Pass Condition | Fail Action |
-|---|---|---|
-| All 4 components resulted | All analytes have a result | Hold — incomplete panel |
-| No critical value triggered | No analyte flagged as critical | Hold — notify provider |
-| Result within expected parameters | Detected or Not Detected result generated | Hold — manual review |
-| QC valid for run | Current QC within acceptable limits | Hold — QC review required |
-| CT value within threshold | CT value at or below cutoff threshold | Hold — manual review required |
+| CER Rule | Pass Condition | Pass Action | Fail Action |
+|---|---|---|---|
+| All 4 components resulted | Each analyte has a valid Detected or Not Detected result | Proceed to next rule | Hold — one or more components missing or invalid |
+| No critical value designation | This panel has no critical value configuration | Proceed to next rule | N/A |
+| Result within expected parameters | Detected or Not Detected result generated | Proceed to next rule | Hold — manual review |
+| QC valid for run | Current QC within acceptable limits | Proceed to next rule | Hold — QC review required |
+| CT value within threshold | CT value at or below cutoff threshold | Auto-verify and release to provider chart | Hold — manual review required |
 
-**Critical Value Configuration:** No critical value designation for any component of this panel. Results route to provider chart upon verification without mandatory callout requirement.
+**Auto-verification outcome:**
+- ALL rules pass → Result auto-verifies and releases to provider chart automatically
+- ANY rule fails → Result held in queue for manual tech review and verification
+
+**Critical Value Configuration:** No critical value designation configured for any component of this panel. All results — Detected or Not Detected — route to provider chart upon successful auto-verification without mandatory provider callout requirement.
+
+**Note on CT Value Cutoff:** CT value cutoff threshold to be verified from platform package insert prior to build configuration. Approximate threshold is 40-42 cycles — confirm exact value before finalizing build.
 
 ---
 
@@ -113,8 +119,8 @@ Auto-verification will trigger when ALL of the following conditions are met:
 |---|---|
 | TAT Tracking Start | Specimen receipt timestamp in Epic Beaker |
 | TAT Alert | Specimens exceeding TAT threshold flagged with red highlighting in Beaker worklist |
-| STAT TAT threshold | 47 minutes from receipt (Cepheid platform) |
-| Routine TAT threshold | 3.5 hours from receipt (Hologic Panther platform) |
+| STAT TAT threshold | 47 minutes from receipt (Cepheid GeneXpert Infinity) |
+| Routine TAT threshold | 3.5 hours from receipt (Hologic Panther) |
 
 ---
 
